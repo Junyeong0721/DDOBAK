@@ -1,0 +1,11 @@
+{
+  "name": "handwriting-note",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "check": "node --check dist/app.js && node --check dist/geometry.js && node --check dist/input.js && node --check dist/storage.js && node --check server.mjs"
+  }
+}

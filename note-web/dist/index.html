@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f6f7f4">
+  <meta name="description" content="흰 화면 전체에 쓰고, 사방으로 이어가는 나만의 손글씨 노트.">
+  <title>손글씨 노트 · 첫 번째 노트</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <a class="brand" href="./" aria-label="손글씨 노트"><span class="brand-mark" data-icon="leaf"></span><span>손글씨<span class="brand-light"> 노트</span></span></a>
+      <div class="document-heading">
+        <label class="sr-only" for="note-title">노트 이름</label>
+        <input id="note-title" value="첫 번째 노트" maxlength="60" autocomplete="off" spellcheck="false">
+        <span class="save-status" id="save-status" role="status"><i></i><span>불러오는 중</span></span>
+      </div>
+      <div class="header-actions">
+        <button class="icon-button" id="export" title="필기 파일 내보내기" aria-label="필기 파일 내보내기" data-icon="download"></button>
+        <button class="icon-button" id="help" title="사용 방법" aria-label="사용 방법" data-icon="help"></button>
+      </div>
+    </header>
+
+    <section class="toolbar" aria-label="필기 도구">
+      <div class="toolbar-main">
+        <div class="tool-group tool-selector" role="group" aria-label="도구 선택">
+          <button class="tool-button active" id="pen" aria-label="펜" aria-pressed="true" title="펜 (P)"><span data-icon="pen"></span><span>펜</span></button>
+          <button class="tool-button" id="eraser" aria-label="지우개" aria-pressed="false" title="부분 지우개 (E)"><span data-icon="eraser"></span><span>지우개</span></button>
+        </div>
+        <span class="divider"></span>
+        <div class="color-group" role="group" aria-label="펜 색상">
+          <button class="color-button selected" data-color="#293e3b" style="--swatch:#293e3b" aria-label="잉크색" aria-pressed="true"></button>
+          <button class="color-button" data-color="#5278aa" style="--swatch:#5278aa" aria-label="파란색" aria-pressed="false"></button>
+          <button class="color-button" data-color="#c17870" style="--swatch:#c17870" aria-label="분홍색" aria-pressed="false"></button>
+          <button class="color-button" data-color="#77915d" style="--swatch:#77915d" aria-label="초록색" aria-pressed="false"></button>
+        </div>
+        <div class="popover-anchor">
+          <button class="size-button" id="size-toggle" aria-label="펜 굵기" aria-expanded="false" aria-controls="size-panel"><span id="size-dot"></span><span data-icon="chevron"></span></button>
+          <div class="popover size-panel" id="size-panel" hidden>
+            <div class="popover-title"><label for="size-slider" id="size-label">펜 굵기</label><output id="size-value">5</output></div>
+            <input id="size-slider" type="range" min="2" max="14" step="1" value="5">
+            <div class="size-preview"><span id="size-preview-line"></span></div>
+          </div>
+        </div>
+        <span class="divider"></span>
+        <div class="tool-group" role="group" aria-label="실행 기록">
+          <button class="icon-button" id="undo" aria-label="실행 취소" title="실행 취소 (Ctrl/⌘ Z)" data-icon="undo" disabled></button>
+          <button class="icon-button" id="redo" aria-label="다시 실행" title="다시 실행 (Ctrl/⌘ Shift Z)" data-icon="redo" disabled></button>
+        </div>
+      </div>
+      <div class="toolbar-settings">
+        <label class="guide-select"><span data-icon="grid"></span><select id="guide" aria-label="종이 안내선"><option value="none">무지</option><option value="lines">줄노트</option><option value="grid">격자</option></select></label>
+        <span class="divider"></span>
+        <button class="setting-button" id="finger" aria-pressed="false" title="손가락 필기 켜기"><span data-icon="finger"></span><span>손가락 필기</span><span class="switch" aria-hidden="true"></span></button>
+        <button class="setting-button lock-button" id="lock" aria-pressed="false" title="화면 고정 켜기"><span id="lock-icon" data-icon="unlock"></span><span id="lock-label">화면 고정</span></button>
+      </div>
+    </section>
+
+    <main class="notebook">
+      <aside class="page-rail" id="page-rail" aria-label="현재 페이지" hidden>
+        <div class="rail-heading"><span>페이지 1</span><button class="icon-button" id="close-pages" aria-label="페이지 목록 닫기" data-icon="close"></button></div>
+        <button class="page-card" id="page-fit" title="100%로 페이지 열기" aria-label="첫 번째 페이지를 100%로 열기"><canvas id="thumbnail" width="180" height="120" aria-hidden="true"></canvas><span class="page-number">01</span></button>
+        <p class="page-caption">첫 번째 페이지</p>
+        <div class="rail-footer"><span data-icon="leaf"></span><p>생각이 머무는<br>나만의 종이.</p></div>
+      </aside>
+      <section class="workspace" id="workspace" aria-label="노트 작업 공간">
+        <canvas id="paper" tabindex="0" aria-label="필기 영역. 마우스 또는 펜으로 쓰고 Shift를 누른 채 드래그해 이동합니다."></canvas>
+        <div class="workspace-tag"><button class="page-toggle" id="page-toggle" aria-expanded="false" aria-controls="page-rail" aria-label="페이지 목록"><span data-icon="grid"></span><span>페이지 01</span></button><span id="paper-label">무지</span><span class="tag-separator">/</span><span>자유롭게 이어 쓰기</span></div>
+        <div class="empty-hint" id="empty-hint" aria-hidden="true"><span class="hint-flourish" data-icon="scribble"></span><p>여기서 시작해 보세요.</p><span>서두르지 않고, 나만의 글씨로.</span></div>
+        <div class="eraser-cursor" id="eraser-cursor" hidden></div>
+        <div class="workspace-bottom">
+          <div class="gesture-hint" id="gesture-hint"><kbd>Shift</kbd> + 드래그로 종이 이동</div>
+          <div class="zoom-bar" role="group" aria-label="페이지 확대 및 축소">
+            <button class="icon-button" id="zoom-out" aria-label="축소" title="축소 (최소 10%)" data-icon="minus"></button>
+            <output id="zoom-value" aria-live="off">100%</output>
+            <button class="icon-button" id="zoom-in" aria-label="확대" title="확대 (최대 100%)" data-icon="plus"></button>
+            <span class="divider"></span>
+            <button class="icon-button" id="fit" aria-label="100%로 보기" title="100%로 보기 (0)" data-icon="fit"></button>
+          </div>
+        </div>
+      </section>
+    </main>
+    <div class="notice" id="notice" role="alert" hidden></div>
+    <div class="toast" id="toast" role="status" hidden></div>
+  </div>
+
+  <dialog id="help-dialog" aria-labelledby="help-title">
+    <div class="dialog-heading"><span class="dialog-eyebrow">작은 사용 안내</span><button class="icon-button" id="close-help" aria-label="사용 방법 닫기" data-icon="close"></button></div>
+    <h1 id="help-title">종이는 크게,<br>필기는 편하게.</h1>
+    <dl class="help-list">
+      <div><dt>흰 화면 전체가 노트예요</dt><dd>종이 테두리 없이 어느 곳에나 쓸 수 있어요. 페이지는 100% 배율로 열리고, 10%까지 줄여 넓게 볼 수 있어요. 아래 100%로 보기 버튼이나 키보드 0을 누르면 기본 배율로 돌아와요.</dd></div>
+      <div><dt>컴퓨터에서는</dt><dd>마우스로 쓰고, Shift를 누른 채 드래그하면 종이가 이동해요. 휠이나 아래의 + / − 버튼으로 확대해 보세요.</dd></div>
+      <div><dt>아이패드에서는</dt><dd>펜은 항상 필기할 수 있어요. 손가락 필기를 끄면 한 손가락으로 이동하고, 켜면 손가락으로도 쓸 수 있어요. 두 손가락으로 확대·이동해요.</dd></div>
+      <div><dt>집중해서 쓸 때는</dt><dd>화면 고정을 켜세요. 종이 이동과 확대·축소가 멈춰요. 펜을 쓸 때는 손가락 필기를 끄는 것을 권해요.</dd></div>
+      <div><dt>내 글씨 보관하기</dt><dd>필기는 현재 기기의 이 브라우저에 자동 저장돼요. 중요한 표본은 상단의 내보내기로 파일에 보관하세요. 파일 다시 불러오기는 후속 단계에서 제공할 예정이에요.</dd></div>
+    </dl>
+    <p class="shortcut-note">P 펜 · E 지우개 · Ctrl/⌘ Z 실행 취소 · 0 100%로 보기</p>
+    <button class="primary-button" id="start-writing">필기하러 가기 <span data-icon="arrow"></span></button>
+  </dialog>
+  <noscript>필기 화면을 사용하려면 브라우저에서 JavaScript를 허용해 주세요.</noscript>
+</body>
+</html>
