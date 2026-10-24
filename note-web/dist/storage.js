@@ -17,10 +17,10 @@ export function validateNote(note) {
   }
   return note;
 }
-export function chooseLatest(saved, pending) {
-  if (saved) validateNote(saved);
-  if (pending) validateNote(pending);
-  return pending && (!saved || pending.revision > saved.revision) ? pending : saved || defaultNote();
+export function chooseLatest(saved, pending, validate = validateNote, create = defaultNote) {
+  if (saved) validate(saved);
+  if (pending) validate(pending);
+  return pending && (!saved || pending.revision > saved.revision) ? pending : saved || create();
 }
 
 function openDatabase() {
@@ -32,11 +32,11 @@ function openDatabase() {
     request.onblocked = () => reject(new Error('다른 탭을 닫은 뒤 다시 열어 주세요.'));
   });
 }
-function transaction(database, mode, value) {
+function transaction(database, mode, value, key = 'page-1') {
   return new Promise((resolve, reject) => {
     const tx = database.transaction('notes', mode);
     const store = tx.objectStore('notes');
-    const request = mode === 'readwrite' ? store.put(value, 'page-1') : store.get('page-1');
+    const request = mode === 'readwrite' ? store.put(value, key) : store.get(key);
     tx.oncomplete = () => resolve(request.result);
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error || new Error('저장이 중단되었습니다.'));
@@ -44,28 +44,33 @@ function transaction(database, mode, value) {
 }
 
 export class NoteStorage {
-  constructor(onStatus) { this.onStatus = onStatus; this.database = null; this.queue = Promise.resolve(); this.latestRevision = -1; }
+  constructor(onStatus, options = {}) {
+    this.onStatus = onStatus; this.database = null; this.queue = Promise.resolve(); this.latestRevision = -1;
+    this.key = options.key || 'page-1'; this.journal = options.journal || JOURNAL;
+    this.validate = options.validate || validateNote; this.create = options.create || defaultNote; this.migrate = options.migrate;
+  }
   async load() {
     let saved = null, pending = null, storageAvailable = false;
     try {
-      const text = localStorage.getItem(JOURNAL);
-      if (text) pending = validateNote(JSON.parse(text));
+      const text = localStorage.getItem(this.journal);
+      if (text) pending = this.validate(JSON.parse(text));
       storageAvailable = true;
     } catch (error) {
-      if (error instanceof SyntaxError || error.message?.startsWith('저장')) throw error;
+      if (!(error instanceof DOMException)) throw error;
     }
     try {
       this.database = await openDatabase();
-      saved = await transaction(this.database, 'readonly');
+      saved = await transaction(this.database, 'readonly', undefined, this.key);
     } catch (error) {
       this.database = null;
       // Do not create a blank replacement if an existing database cannot be read.
       if (!pending) throw new Error('저장 공간을 열 수 없습니다. 다른 탭을 닫거나 브라우저 저장 권한을 확인한 뒤 다시 열어 주세요.');
     }
-    const note = chooseLatest(saved, pending);
+    const migrating = !saved && !pending && this.migrate;
+    const note = migrating ? this.validate(await this.migrate()) : chooseLatest(saved, pending, this.validate, this.create);
     this.latestRevision = note.revision;
     if (!this.database && !storageAvailable) throw new Error('저장 공간을 사용할 수 없습니다.');
-    if (pending && this.database) await this.save(note);
+    if ((pending || migrating) && this.database) await this.save(note);
     else this.onStatus(this.database ? 'saved' : 'fallback');
     return note;
   }
@@ -74,13 +79,13 @@ export class NoteStorage {
     this.latestRevision = snapshot.revision;
     this.onStatus('saving');
     let journaled = false;
-    try { localStorage.setItem(JOURNAL, JSON.stringify(snapshot)); journaled = true; } catch { /* IDB may still succeed. */ }
+    try { localStorage.setItem(this.journal, JSON.stringify(snapshot)); journaled = true; } catch { /* IDB may still succeed. */ }
     this.queue = this.queue.catch(() => {}).then(async () => {
       try {
         if (!this.database) throw new Error('IndexedDB is unavailable');
-        await transaction(this.database, 'readwrite', snapshot);
+        await transaction(this.database, 'readwrite', snapshot, this.key);
         if (snapshot.revision === this.latestRevision) {
-          try { localStorage.removeItem(JOURNAL); } catch { /* Saved in IDB. */ }
+          try { localStorage.removeItem(this.journal); } catch { /* Saved in IDB. */ }
           this.onStatus('saved');
         }
         return true;

@@ -13,14 +13,14 @@
 <body>
   <div class="app-shell">
     <header class="app-header">
-      <a class="brand" href="./" aria-label="손글씨 노트"><span class="brand-mark" data-icon="leaf"></span><span>손글씨<span class="brand-light"> 노트</span></span></a>
+      <button class="brand" id="home" aria-label="내 노트로 돌아가기" title="내 노트"><span class="brand-mark" data-icon="leaf"></span><span>손글씨<span class="brand-light"> 노트</span></span></button>
       <div class="document-heading">
         <label class="sr-only" for="note-title">노트 이름</label>
         <input id="note-title" value="첫 번째 노트" maxlength="60" autocomplete="off" spellcheck="false">
         <span class="save-status" id="save-status" role="status"><i></i><span>불러오는 중</span></span>
       </div>
       <div class="header-actions">
-        <button class="icon-button" id="export" title="필기 파일 내보내기" aria-label="필기 파일 내보내기" data-icon="download"></button>
+        <button class="icon-button" id="export" title="백업·불러오기" aria-label="백업·불러오기" data-icon="download"></button>
         <button class="icon-button" id="help" title="사용 방법" aria-label="사용 방법" data-icon="help"></button>
       </div>
     </header>
@@ -30,6 +30,10 @@
         <div class="tool-group tool-selector" role="group" aria-label="도구 선택">
           <button class="tool-button active" id="pen" aria-label="펜" aria-pressed="true" title="펜 (P)"><span data-icon="pen"></span><span>펜</span></button>
           <button class="tool-button" id="eraser" aria-label="지우개" aria-pressed="false" title="부분 지우개 (E)"><span data-icon="eraser"></span><span>지우개</span></button>
+          <button class="tool-button" id="highlighter" aria-label="형광펜" aria-pressed="false" title="형광펜 (H)"><span data-icon="highlighter"></span><span>형광펜</span></button>
+          <button class="tool-button" id="lasso" aria-label="올가미" aria-pressed="false" title="올가미 선택 (L)"><span data-icon="lasso"></span><span>올가미</span></button>
+          <button class="tool-button" id="line" aria-label="직선" aria-pressed="false" title="직선"><span data-icon="line"></span><span>직선</span></button>
+          <button class="tool-button" id="arrow" aria-label="화살표" aria-pressed="false" title="화살표"><span data-icon="arrow"></span><span>화살표</span></button>
         </div>
         <span class="divider"></span>
         <div class="color-group" role="group" aria-label="펜 색상">
@@ -37,6 +41,7 @@
           <button class="color-button" data-color="#5278aa" style="--swatch:#5278aa" aria-label="파란색" aria-pressed="false"></button>
           <button class="color-button" data-color="#c17870" style="--swatch:#c17870" aria-label="분홍색" aria-pressed="false"></button>
           <button class="color-button" data-color="#77915d" style="--swatch:#77915d" aria-label="초록색" aria-pressed="false"></button>
+          <button class="color-button" data-color="#e9c95f" style="--swatch:#e9c95f" aria-label="노란색" aria-pressed="false"></button>
         </div>
         <div class="popover-anchor">
           <button class="size-button" id="size-toggle" aria-label="펜 굵기" aria-expanded="false" aria-controls="size-panel"><span id="size-dot"></span><span data-icon="chevron"></span></button>
@@ -44,6 +49,14 @@
             <div class="popover-title"><label for="size-slider" id="size-label">펜 굵기</label><output id="size-value">5</output></div>
             <input id="size-slider" type="range" min="2" max="14" step="1" value="5">
             <div class="size-preview"><span id="size-preview-line"></span></div>
+          </div>
+        </div>
+        <div class="popover-anchor favorites-anchor">
+          <button class="icon-button" id="favorites-toggle" aria-label="펜 즐겨찾기" title="펜 즐겨찾기" aria-expanded="false" data-icon="star"></button>
+          <div class="popover favorites-panel" id="favorites-panel" hidden>
+            <div class="popover-title"><strong>자주 쓰는 펜</strong><span>최대 8개</span></div>
+            <div id="favorites-list"></div>
+            <button class="subtle-button" id="save-favorite">현재 색·굵기 추가</button>
           </div>
         </div>
         <span class="divider"></span>
@@ -62,14 +75,24 @@
 
     <main class="notebook">
       <aside class="page-rail" id="page-rail" aria-label="현재 페이지" hidden>
-        <div class="rail-heading"><span>페이지 1</span><button class="icon-button" id="close-pages" aria-label="페이지 목록 닫기" data-icon="close"></button></div>
-        <button class="page-card" id="page-fit" title="100%로 페이지 열기" aria-label="첫 번째 페이지를 100%로 열기"><canvas id="thumbnail" width="180" height="120" aria-hidden="true"></canvas><span class="page-number">01</span></button>
-        <p class="page-caption">첫 번째 페이지</p>
-        <div class="rail-footer"><span data-icon="leaf"></span><p>생각이 머무는<br>나만의 종이.</p></div>
+        <div class="rail-heading"><strong>페이지</strong><button class="icon-button" id="close-pages" aria-label="페이지 목록 닫기" data-icon="close"></button></div>
+        <div class="rail-tabs"><button id="pages-tab" aria-pressed="true">전체 페이지</button><button id="trash-tab" aria-pressed="false">휴지통</button></div>
+        <button class="subtle-button" id="add-page"><span data-icon="plus"></span>새 페이지</button>
+        <div id="page-list" class="page-list"></div>
+        <div id="page-editor" class="page-editor">
+          <label for="page-title">선택한 페이지 이름</label><input id="page-title" maxlength="80" autocomplete="off">
+          <div class="page-actions"><button id="page-up" title="앞으로 이동" aria-label="페이지 앞으로 이동">↑</button><button id="page-down" title="뒤로 이동" aria-label="페이지 뒤로 이동">↓</button><button id="duplicate-page">복제</button><button id="delete-page">휴지통으로</button></div>
+        </div>
       </aside>
       <section class="workspace" id="workspace" aria-label="노트 작업 공간">
         <canvas id="paper" tabindex="0" aria-label="필기 영역. 마우스 또는 펜으로 쓰고 Shift를 누른 채 드래그해 이동합니다."></canvas>
-        <div class="workspace-tag"><button class="page-toggle" id="page-toggle" aria-expanded="false" aria-controls="page-rail" aria-label="페이지 목록"><span data-icon="grid"></span><span>페이지 01</span></button><span id="paper-label">무지</span><span class="tag-separator">/</span><span>자유롭게 이어 쓰기</span></div>
+        <div class="workspace-tag"><button class="page-toggle" id="page-toggle" aria-expanded="false" aria-controls="page-rail" aria-label="페이지 목록"><span data-icon="grid"></span><span id="page-name">첫 번째 페이지</span></button><span id="paper-label">무지</span><span class="tag-separator">/</span><span>자유롭게 이어 쓰기</span></div>
+        <div class="selection-bar" id="selection-bar" hidden>
+          <span id="selection-count">글씨를 둘러싸 선택하세요</span>
+          <button id="select-all">전체 선택</button><button id="copy-selection">복사</button><button id="paste-selection">붙여넣기</button>
+          <button id="shrink-selection" aria-label="선택한 글씨 크기 줄이기">크기 −</button><button id="grow-selection" aria-label="선택한 글씨 크기 늘리기">크기 +</button>
+          <button id="delete-selection">지우기</button><button id="clear-selection">선택 해제</button>
+        </div>
         <div class="empty-hint" id="empty-hint" aria-hidden="true"><span class="hint-flourish" data-icon="scribble"></span><p>여기서 시작해 보세요.</p><span>서두르지 않고, 나만의 글씨로.</span></div>
         <div class="eraser-cursor" id="eraser-cursor" hidden></div>
         <div class="workspace-bottom">
@@ -88,6 +111,33 @@
     <div class="toast" id="toast" role="status" hidden></div>
   </div>
 
+  <section id="library-screen" class="library-screen" aria-label="내 노트" hidden>
+    <header class="library-header"><div class="brand"><span class="brand-mark" data-icon="leaf"></span><span>손글씨 노트</span></div><button class="subtle-button" id="library-backup"><span data-icon="download"></span>백업·불러오기</button></header>
+    <main class="library-content">
+      <div class="library-intro"><div><p class="eyebrow">나의 기록을 한곳에</p><h1>내 노트</h1><p class="library-description">수업도, 떠오른 생각도. 한 권씩 차곡차곡.</p></div><button class="primary-button" id="new-notebook"><span data-icon="plus"></span>새 노트</button></div>
+      <div class="library-filter"><label for="note-search" class="sr-only">노트 이름 검색</label><input type="search" id="note-search" placeholder="노트 이름으로 찾기" autocomplete="off"><span id="notebook-count"></span></div>
+      <div id="notebook-list" class="notebook-grid"></div>
+      <p class="library-footnote">노트는 이 기기의 브라우저에 보관돼요. 백업 파일로 다른 기기에 옮길 수 있어요.</p>
+    </main>
+  </section>
+
+  <dialog id="name-dialog" aria-labelledby="name-heading">
+    <form id="name-form"><div class="dialog-heading"><h2 id="name-heading">새 노트</h2><button type="button" class="icon-button" data-close="name-dialog" aria-label="이름 입력 닫기" data-icon="close"></button></div>
+      <label class="field-label" for="name-input">이름</label><input class="text-input" id="name-input" maxlength="80" required autocomplete="off">
+      <button class="primary-button" type="submit" id="name-submit">만들기</button>
+    </form>
+  </dialog>
+  <dialog id="backup-dialog" aria-labelledby="backup-heading">
+    <div class="dialog-heading"><h2 id="backup-heading">백업·불러오기</h2><button class="icon-button" data-close="backup-dialog" aria-label="백업 창 닫기" data-icon="close"></button></div>
+    <div class="backup-section"><h3>파일로 보관하기</h3><p>글씨와 페이지, 휴지통, 펜 즐겨찾기를 다시 편집할 수 있는 파일로 저장해요.</p>
+      <label class="field-label" for="backup-scope">백업할 범위</label><select class="text-input" id="backup-scope"><option value="notebook">현재 노트 한 권</option><option value="all">모든 노트</option></select><button class="primary-button" id="download-backup">백업 파일 저장</button>
+    </div>
+    <div class="backup-section"><h3>백업 파일 불러오기</h3><p>기존 노트는 그대로 두고 새 노트로 추가해요. 이전 버전의 필기 파일도 가져올 수 있어요.</p>
+      <label class="file-picker" for="import-file">백업 파일 선택<input id="import-file" type="file" accept=".json,application/json"></label>
+      <div id="import-preview" class="import-preview" hidden></div><p id="import-error" class="inline-error" role="alert" hidden></p><button class="primary-button" id="confirm-import" hidden>새 노트로 가져오기</button>
+    </div>
+  </dialog>
+
   <dialog id="help-dialog" aria-labelledby="help-title">
     <div class="dialog-heading"><span class="dialog-eyebrow">작은 사용 안내</span><button class="icon-button" id="close-help" aria-label="사용 방법 닫기" data-icon="close"></button></div>
     <h1 id="help-title">종이는 크게,<br>필기는 편하게.</h1>
@@ -96,9 +146,12 @@
       <div><dt>컴퓨터에서는</dt><dd>마우스로 쓰고, Shift를 누른 채 드래그하면 종이가 이동해요. 휠이나 아래의 + / − 버튼으로 확대해 보세요.</dd></div>
       <div><dt>아이패드에서는</dt><dd>펜은 항상 필기할 수 있어요. 손가락 필기를 끄면 한 손가락으로 이동하고, 켜면 손가락으로도 쓸 수 있어요. 두 손가락으로 확대·이동해요.</dd></div>
       <div><dt>집중해서 쓸 때는</dt><dd>화면 고정을 켜세요. 종이 이동과 확대·축소가 멈춰요. 펜을 쓸 때는 손가락 필기를 끄는 것을 권해요.</dd></div>
-      <div><dt>내 글씨 보관하기</dt><dd>필기는 현재 기기의 이 브라우저에 자동 저장돼요. 중요한 표본은 상단의 내보내기로 파일에 보관하세요. 파일 다시 불러오기는 후속 단계에서 제공할 예정이에요.</dd></div>
+      <div><dt>글씨를 정리할 때는</dt><dd>올가미로 글씨를 둘러싸세요. 선택 안쪽을 끌면 이동하고, 오른쪽 아래 점을 끌면 크기가 바뀌어요. 복사한 글씨는 다른 페이지에도 붙여넣을 수 있어요.</dd></div>
+      <div><dt>공부할 때는</dt><dd>형광펜으로 강조하고, 직선·화살표는 시작점에서 끝점까지 끌어 그려요. 별 버튼에서 자주 쓰는 펜의 색과 굵기를 저장할 수 있어요.</dd></div>
+      <div><dt>노트와 페이지</dt><dd>왼쪽 위 로고로 내 노트에 돌아가세요. 페이지 목록에서 추가·이름 변경·순서 이동·복제가 가능해요. 삭제한 페이지는 휴지통에서 복구할 수 있어요.</dd></div>
+      <div><dt>내 글씨 보관하기</dt><dd>필기는 현재 기기의 이 브라우저에 자동 저장돼요. 백업·불러오기에서 파일로 보관하고 다시 가져올 수 있어요. 가져온 파일은 새 노트로 추가돼요.</dd></div>
     </dl>
-    <p class="shortcut-note">P 펜 · E 지우개 · Ctrl/⌘ Z 실행 취소 · 0 100%로 보기</p>
+    <p class="shortcut-note">P 펜 · E 지우개 · H 형광펜 · L 올가미 · Ctrl/⌘ Z 실행 취소 · 0 100%로 보기</p>
     <button class="primary-button" id="start-writing">필기하러 가기 <span data-icon="arrow"></span></button>
   </dialog>
   <noscript>필기 화면을 사용하려면 브라우저에서 JavaScript를 허용해 주세요.</noscript>
