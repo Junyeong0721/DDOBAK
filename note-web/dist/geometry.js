@@ -87,7 +87,7 @@ export function eraseStroke(stroke, from, to, radius) {
     if (cut[1] < 1 - EPS) { add(interpolate(a, b, cut[1])); add(b); }
   }
   flush();
-  return changed ? pieces.map(piece => ({ ...stroke, id: `${stroke.id.slice(0, 24)}-f${++fragmentId}`, points: piece })) : [stroke];
+  return changed ? pieces.map(piece => ({ ...stroke, id: globalThis.crypto?.randomUUID?.() || `fragment-${Date.now().toString(36)}-${++fragmentId}-${Math.random().toString(36).slice(2)}`, points: piece })) : [stroke];
 }
 
 export function eraseStrokes(strokes, from, to, radius) {

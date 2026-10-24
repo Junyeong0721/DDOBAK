@@ -100,3 +100,12 @@ test('arrow strokes retain editable head geometry after serialization and partia
   assert.ok(pieces.every(piece => piece.kind === 'arrow'));
   const library = migrateLegacy(); library.notebooks[0].pages[0].strokes = JSON.parse(JSON.stringify(pieces)); validateLibrary(library);
 });
+test('erasing again after reopening never reuses the ID of a surviving fragment', async () => {
+  const firstSession = await import('../dist/geometry.js?erase-session-one');
+  const secondSession = await import('../dist/geometry.js?erase-session-two');
+  const original = { ...stroke('stroke-1234567890-abcdefghij-123'), points: [p(0, 0), p(100, 0)] };
+  const saved = JSON.parse(JSON.stringify(firstSession.eraseStroke(original, p(50, -10), p(50, 10), 5)));
+  const edited = secondSession.eraseStrokes(saved, p(20, -10), p(20, 10), 5);
+  assert.equal(edited.length, 3); assert.equal(new Set(edited.map(item => item.id)).size, 3);
+  const library = migrateLegacy(); library.notebooks[0].pages[0].strokes = edited; validateLibrary(library);
+});
